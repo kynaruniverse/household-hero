@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from './lib/supabase'
 import SignIn from './views/SignIn'
-import AdultHome from './views/AdultHome'
+import AdultShell from './views/AdultShell'
 import ChildGate from './views/ChildGate'
 
 export default function App() {
@@ -20,7 +20,7 @@ export default function App() {
       {session === undefined ? <p>Loading…</p>
         : !session ? <SignIn />
         : session.user.is_anonymous ? <ChildGate userId={session.user.id} />
-        : <AdultHome />}
+        : <AdultShell />}
       {session && (
         <p><button onClick={() => supabase.auth.signOut()} style={{ padding: 8 }}>Sign out</button></p>
       )}

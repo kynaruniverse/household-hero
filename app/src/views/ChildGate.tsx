@@ -20,6 +20,14 @@ export default function ChildGate({ userId }: { userId: string }) {
     else if (!data) setMsg("That code didn't work. Check it and try again.")
     else load()
   }
+  
+    const rlsTest = async () => {
+    const read = await supabase.from('chores').select('id')
+    const write = await supabase.from('chores').insert({
+      household_id: member?.household_id, name: 'hack', effort: 1, active_days: [0],
+    })
+    setMsg(`Can read ${read.data?.length ?? 0} chores. Write: ${write.error ? 'blocked ✅' : 'ALLOWED ❌'}`)
+  }
 
   if (member === undefined) return <p>Loading…</p>
 
@@ -27,6 +35,8 @@ export default function ChildGate({ userId }: { userId: string }) {
     <>
       <h2>{member.token_emoji ?? '🙂'} Hi {member.display_name}!</h2>
       <p>You're all set up. Chores are coming soon.</p>
+            <button onClick={rlsTest} style={{ minHeight: 48 }}>Test: chores access</button>
+      <p>{msg}</p>
     </>
   ) : (
     <>
