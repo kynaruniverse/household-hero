@@ -1,4 +1,4 @@
-# Household Hero
+# Chorelings
 
 A board game for sharing out the housework. Grown-ups build a weekly board of chores and hand them out by hand, by auto-suggest, or by drafting them like a game. Children tick chores off on their own phone and earn points. It is a PWA, so it installs to the home screen and keeps working offline.
 

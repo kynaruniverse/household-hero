@@ -11,7 +11,7 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       manifest: {
-        name: 'Household Hero',
+        name: 'Chorelings',
         short_name: 'Hero',
         description: 'A board game for sharing out the housework.',
         theme_color: '#CDEFE0',

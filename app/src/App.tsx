@@ -17,7 +17,7 @@ export default function App() {
 
   return (
     <main style={{ fontFamily: 'system-ui', padding: 24, background: '#FFF9F0', minHeight: '100vh' }}>
-      <h1>🦸 Household Hero</h1>
+      <h1>Chorelings</h1>
       {session === undefined ? <p>Loading…</p>
         : !session ? <SignIn />
         : session.user.is_anonymous ? <ChildGate userId={session.user.id} />
