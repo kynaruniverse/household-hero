@@ -22,11 +22,15 @@ export default function ChildGate({ userId }: { userId: string }) {
   }
   
     const rlsTest = async () => {
-    const read = await supabase.from('chores').select('id')
-    const write = await supabase.from('chores').insert({
-      household_id: member?.household_id, name: 'hack', effort: 1, active_days: [0],
-    })
-    setMsg(`Can read ${read.data?.length ?? 0} chores. Write: ${write.error ? 'blocked ✅' : 'ALLOWED ❌'}`)
+    const weeks = await supabase.from('weeks').select('id')
+    const create = await supabase.rpc('create_week', { p_household: member?.household_id })
+    const write = await supabase.from('assignments')
+      .update({ member_id: member?.id }).eq('household_id', member?.household_id).select('id')
+    setMsg(
+      `Can read ${weeks.data?.length ?? 0} weeks. ` +
+      `create_week: ${create.error ? 'blocked ✅' : 'ALLOWED ❌'}. ` +
+      `Direct edit: ${write.error || !write.data?.length ? 'blocked ✅' : 'ALLOWED ❌'}`
+    )
   }
 
   if (member === undefined) return <p>Loading…</p>
