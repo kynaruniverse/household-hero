@@ -3,10 +3,12 @@ import { supabase } from '../lib/supabase'
 import AdultHome from './AdultHome'
 import ApprovalsInbox from './ApprovalsInbox'
 import ChoreList from './ChoreList'
+import ScoresView from './ScoresView'
+import SettingsView from './SettingsView'
 import TodayView from './TodayView'
 import WeekBoard from './WeekBoard'
 
-type Tab = 'today' | 'week' | 'approve' | 'chores' | 'family'
+type Tab = 'today' | 'week' | 'approve' | 'scores' | 'chores' | 'family' | 'settings'
 type Me = { id: string; household_id: string }
 
 export default function AdultShell({ userId }: { userId: string }) {
@@ -18,14 +20,16 @@ export default function AdultShell({ userId }: { userId: string }) {
       .then(({ data }) => setMe((data as Me | null) ?? null))
   }, [userId, tab])
 
-  const tabBtn = (t: Tab, label: string) => (
+  const tabBtn = (t: Tab, icon: string, label: string) => (
     <button
       onClick={() => setTab(t)}
+      aria-label={label}
       style={{
-        minHeight: 48, flex: 1, fontSize: 12, padding: '0 2px', borderRadius: 12, border: 'none',
+        minHeight: 52, flex: 1, minWidth: 0, fontSize: 9, padding: '0 1px', borderRadius: 12, border: 'none',
         background: tab === t ? '#CDEFE0' : '#fff', fontWeight: tab === t ? 700 : 400,
       }}
     >
+      <span style={{ fontSize: 18, display: 'block' }}>{icon}</span>
       {label}
     </button>
   )
@@ -34,17 +38,21 @@ export default function AdultShell({ userId }: { userId: string }) {
 
   return (
     <>
-      <div style={{ display: 'flex', gap: 6, marginBottom: 16 }}>
-        {tabBtn('today', '✅ Today')}
-        {tabBtn('week', '📅 Week')}
-        {tabBtn('approve', '👍 Approve')}
-        {tabBtn('chores', '🧽 Chores')}
-        {tabBtn('family', '👨‍👩‍👧 Family')}
+      <div style={{ display: 'flex', gap: 3, marginBottom: 16 }}>
+        {tabBtn('today', '✅', 'Today')}
+        {tabBtn('week', '📅', 'Week')}
+        {tabBtn('approve', '👍', 'Approve')}
+        {tabBtn('scores', '🏆', 'Scores')}
+        {tabBtn('chores', '🧽', 'Chores')}
+        {tabBtn('family', '👨‍👩‍👧', 'Family')}
+        {tabBtn('settings', '⚙️', 'Settings')}
       </div>
       {tab === 'today' ? (me ? <TodayView householdId={me.household_id} memberId={me.id} /> : needHouse)
         : tab === 'approve' ? (me ? <ApprovalsInbox householdId={me.household_id} /> : needHouse)
-        : tab === 'week' ? <WeekBoard />
+        : tab === 'scores' ? (me ? <ScoresView householdId={me.household_id} memberId={me.id} /> : needHouse)
+        : tab === 'week' ? <WeekBoard meId={me?.id ?? null} />
         : tab === 'chores' ? <ChoreList />
+        : tab === 'settings' ? (me ? <SettingsView householdId={me.household_id} /> : needHouse)
         : <AdultHome />}
     </>
   )

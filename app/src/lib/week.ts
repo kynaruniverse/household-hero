@@ -6,6 +6,13 @@ export type Week = {
   week_start: string
   mode: 'GAME' | 'NORMAL'
   status: 'SETUP' | 'DRAFTING' | 'REVIEW' | 'LOCKED' | 'CLOSED'
+  draft_players: string[] | null
+  draft_order: string[] | null
+  turn_index: number | null
+  current_member_id: string | null
+  turn_deadline: string | null
+  draft_shares: Record<string, number> | null
+  draft_cap_pct: number | null
 }
 
 export type Assignment = {
@@ -19,7 +26,8 @@ export type Assignment = {
   status: string
 }
 
-export const WEEK_COLS = 'id,household_id,week_start,mode,status'
+export const WEEK_COLS =
+  'id,household_id,week_start,mode,status,draft_players,draft_order,turn_index,current_member_id,turn_deadline,draft_shares,draft_cap_pct'
 export const ASSIGN_COLS = 'id,chore_id,chore_name,chore_effort,chore_category,date,member_id,status'
 
 export function weekDates(start: string): string[] {

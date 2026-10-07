@@ -32,6 +32,7 @@ export default function GameScreen({ week, members, cells, onExit }: Props) {
   const [justPlaced, setJustPlaced] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState('')
+  const [joined, setJoined] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     ;(async () => {
@@ -43,6 +44,12 @@ export default function GameScreen({ week, members, cells, onExit }: Props) {
       else setPhase('lobby')
     })()
   }, [key, week.status])
+  
+  useEffect(() => {
+    supabase.from('members').select('id,auth_uid').eq('household_id', week.household_id)
+      .then(({ data }) =>
+        setJoined(new Set((data ?? []).filter((m) => m.auth_uid).map((m) => m.id as string))))
+  }, [week.household_id])  
 
   const memberById = useMemo(() => new Map(members.map((m) => [m.id, m])), [members])
   const dates = weekDates(week.week_start)
@@ -67,14 +74,24 @@ export default function GameScreen({ week, members, cells, onExit }: Props) {
     setMsg('')
     const { error } = await supabase.rpc('start_game', { p_week: week.id, p_players: chosen })
     if (error) { setBusy(false); return setMsg(error.message) }
+    const { data: hh } = await supabase.from('households').select('settings').eq('id', week.household_id).maybeSingle()
+    const cap = Number((hh?.settings as { loadCapPercent?: number } | undefined)?.loadCapPercent ?? 125)
     const players = members.filter((m) => chosen.includes(m.id)).map((m) => ({ id: m.id, role: m.role }))
     const open = cells.map((c) => ({ id: c.id, effort: c.chore_effort, category: c.chore_category }))
-    // loadCapPercent is fixed at 125 for now; it becomes a household setting in M6
-    const s = createDraft({ players, cells: open, loadCapPercent: 125, seed: Math.floor(Math.random() * 2 ** 31) })
+    const s = createDraft({ players, cells: open, loadCapPercent: cap, seed: Math.floor(Math.random() * 2 ** 31) })
     await cachePut(key, s)
     setDraft(s)
     setPhase(s.done ? 'finished' : 'handoff')
     setBusy(false)
+  }
+
+  const startAsync = async () => {
+    setBusy(true)
+    setMsg('')
+    const { error } = await supabase.rpc('start_async_game', { p_week: week.id, p_players: chosen })
+    setBusy(false)
+    if (error) return setMsg(error.message)
+    onExit()
   }
 
   const place = async (cellId: string, source: 'DRAFT' | 'AUTO') => {
@@ -197,15 +214,21 @@ export default function GameScreen({ week, members, cells, onExit }: Props) {
                 <button key={m.id}
                   onClick={() => setChosen(on ? chosen.filter((x) => x !== m.id) : [...chosen, m.id])}
                   style={{ ...btn, border: `3px solid ${on ? '#6c5ce7' : '#e0dcea'}`, fontWeight: on ? 700 : 400 }}>
-                  {token(m)} {m.display_name}
+                  {token(m)} {m.display_name}{joined.has(m.id) ? '' : ' ⚠️'}
                 </button>
               )
             })}
           </div>
+          <p style={{ fontSize: 14 }}>
+            ⚠️ = hasn’t joined on their own phone yet. Fine for pass-and-play, but in a phone-by-phone game their turns get auto-picked.
+          </p>
           <p style={{ margin: '16px 0 8px' }}>
             Take turns picking a cell. Children can’t pick adult-only chores, and nobody can take far more than their fair share.
           </p>
-          <button disabled={busy || chosen.length < 2} style={bigBtn} onClick={start}>🎲 Start the draft</button>{' '}
+          <button disabled={busy || chosen.length < 2} style={bigBtn} onClick={start}>🎲 Pass-and-play (one phone)</button>
+          <button disabled={busy || chosen.length < 2} style={{ ...bigBtn, marginTop: 8, background: '#E6DFFA' }} onClick={startAsync}>
+            📱 Everyone on their own phone
+          </button>
           <button style={{ ...btn, marginTop: 8 }} onClick={onExit}>Back</button>
         </>
       )}

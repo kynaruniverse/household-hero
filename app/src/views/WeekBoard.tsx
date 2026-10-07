@@ -7,6 +7,7 @@ import {
   type Assignment, type Week,
 } from '../lib/week'
 import GameScreen from './GameScreen'
+import AsyncGame from './AsyncGame'
 
 const btn = {
   minHeight: 48, padding: '0 14px', fontSize: 16, borderRadius: 12, border: 'none', background: '#fff',
@@ -14,7 +15,7 @@ const btn = {
 
 type Outcome = PromiseLike<{ data: unknown; error: { message: string } | null }>
 
-export default function WeekBoard() {
+export default function WeekBoard({ meId }: { meId: string | null }) {
   const [houseId, setHouseId] = useState<string | null | undefined>(undefined)
   const [offset, setOffset] = useState(0)
   const [week, setWeek] = useState<Week | null>(null)
@@ -84,6 +85,15 @@ export default function WeekBoard() {
 
   if (houseId === undefined) return <p>Loading…</p>
   if (houseId === null) return <p>Create your household on the Family tab first.</p>
+  
+  if (week && week.status === 'DRAFTING' && week.draft_order) {
+    return meId ? (
+      <AsyncGame
+        weekId={week.id} memberId={meId} isAdult
+        onDone={() => { if (houseId) loadWeek(houseId, offset) }}
+      />
+    ) : <p>Loading…</p>
+  }  
   
   if (week && (week.status === 'DRAFTING' || (gameOpen && week.status === 'SETUP'))) {
     return (
@@ -175,7 +185,7 @@ export default function WeekBoard() {
                   </button>
                 </>
               )}
-              <button disabled={busy || open > 0} style={{ ...btn, background: '#CDEFE0', fontWeight: 700 }}
+              <button disabled={busy} style={{ ...btn, background: '#CDEFE0', fontWeight: 700 }}
                 onClick={() => {
                   if (confirm('Lock this week? Everyone will see their chores and cells can’t be edited.')) {
                     act(supabase.rpc('lock_week', { p_week: week.id }))
