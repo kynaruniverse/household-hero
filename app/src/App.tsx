@@ -4,6 +4,7 @@ import { supabase } from './lib/supabase'
 import SignIn from './views/SignIn'
 import AdultShell from './views/AdultShell'
 import ChildGate from './views/ChildGate'
+import { clearAll } from './lib/offline'
 
 export default function App() {
   const [session, setSession] = useState<Session | null | undefined>(undefined)
@@ -20,9 +21,9 @@ export default function App() {
       {session === undefined ? <p>Loading…</p>
         : !session ? <SignIn />
         : session.user.is_anonymous ? <ChildGate userId={session.user.id} />
-        : <AdultShell />}
+        : <AdultShell userId={session.user.id} />}
       {session && (
-        <p><button onClick={() => supabase.auth.signOut()} style={{ padding: 8 }}>Sign out</button></p>
+        <p><button onClick={async () => { await clearAll(); await supabase.auth.signOut() }} style={{ padding: 8 }}>Sign out</button></p>
       )}
     </main>
   )

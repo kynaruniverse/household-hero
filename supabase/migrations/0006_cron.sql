@@ -1,0 +1,1 @@
+select cron.schedule('daily-misses', '15 * * * *', $$select run_daily_misses()$$);

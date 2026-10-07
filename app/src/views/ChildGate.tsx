@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { MEMBER_COLS, type Member } from '../lib/columns'
+import TodayView from './TodayView'
 
 export default function ChildGate({ userId }: { userId: string }) {
   const [member, setMember] = useState<Member | null | undefined>(undefined)
@@ -21,15 +22,19 @@ export default function ChildGate({ userId }: { userId: string }) {
     else load()
   }
   
-    const rlsTest = async () => {
-    const weeks = await supabase.from('weeks').select('id')
-    const create = await supabase.rpc('create_week', { p_household: member?.household_id })
-    const write = await supabase.from('assignments')
-      .update({ member_id: member?.id }).eq('household_id', member?.household_id).select('id')
+    const cheatTest = async () => {
+    if (!member) return
+    const bump = await supabase.from('members')
+      .update({ total_points: 99999 }).eq('id', member.id).select('id')
+    const edit = await supabase.from('assignments')
+      .update({ status: 'APPROVED', points_awarded: 999 })
+      .eq('member_id', member.id).select('id')
+    const mine = await supabase.from('assignments').select('id').eq('member_id', member.id).limit(1)
+    const appr = await supabase.rpc('approve_assignment', { p_assignment: mine.data?.[0]?.id })
     setMsg(
-      `Can read ${weeks.data?.length ?? 0} weeks. ` +
-      `create_week: ${create.error ? 'blocked ✅' : 'ALLOWED ❌'}. ` +
-      `Direct edit: ${write.error || !write.data?.length ? 'blocked ✅' : 'ALLOWED ❌'}`
+      `Points edit: ${bump.error || !bump.data?.length ? 'blocked ✅' : 'ALLOWED ❌'}. ` +
+      `Status edit: ${edit.error || !edit.data?.length ? 'blocked ✅' : 'ALLOWED ❌'}. ` +
+      `Self-approve: ${appr.error ? 'blocked ✅' : 'ALLOWED ❌'}`
     )
   }
 
@@ -38,8 +43,8 @@ export default function ChildGate({ userId }: { userId: string }) {
   return member ? (
     <>
       <h2>{member.token_emoji ?? '🙂'} Hi {member.display_name}!</h2>
-      <p>You're all set up. Chores are coming soon.</p>
-            <button onClick={rlsTest} style={{ minHeight: 48 }}>Test: chores access</button>
+      <TodayView householdId={member.household_id} memberId={member.id} />
+      <button onClick={cheatTest} style={{ minHeight: 48, marginTop: 24 }}>Test: cheating</button>
       <p>{msg}</p>
     </>
   ) : (
