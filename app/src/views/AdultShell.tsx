@@ -3,20 +3,21 @@ import { supabase } from '../lib/supabase'
 import AdultHome from './AdultHome'
 import ApprovalsInbox from './ApprovalsInbox'
 import ChoreList from './ChoreList'
+import DraftPanel from './DraftPanel'
 import ScoresView from './ScoresView'
 import SettingsView from './SettingsView'
 import TodayView from './TodayView'
 import WeekBoard from './WeekBoard'
 
 type Tab = 'today' | 'week' | 'approve' | 'scores' | 'chores' | 'family' | 'settings'
-type Me = { id: string; household_id: string }
+type Me = { id: string; household_id: string; role: string }
 
 export default function AdultShell({ userId }: { userId: string }) {
   const [tab, setTab] = useState<Tab>('today')
   const [me, setMe] = useState<Me | null>(null)
 
   useEffect(() => {
-    supabase.from('members').select('id,household_id').eq('auth_uid', userId).maybeSingle()
+    supabase.from('members').select('id,household_id,role').eq('auth_uid', userId).maybeSingle()
       .then(({ data }) => setMe((data as Me | null) ?? null))
   }, [userId, tab])
 
@@ -25,7 +26,7 @@ export default function AdultShell({ userId }: { userId: string }) {
       onClick={() => setTab(t)}
       aria-label={label}
       style={{
-        minHeight: 52, flex: 1, minWidth: 0, fontSize: 9, padding: '0 1px', borderRadius: 12, border: 'none',
+        minHeight: 56, minWidth: 0, fontSize: 13, padding: '0 2px', borderRadius: 12, border: 'none',
         background: tab === t ? '#CDEFE0' : '#fff', fontWeight: tab === t ? 700 : 400,
       }}
     >
@@ -34,11 +35,11 @@ export default function AdultShell({ userId }: { userId: string }) {
     </button>
   )
 
-  const needHouse = <p>Create your household on the Family tab first.</p>
+  const needHouse = <p>Create or join a household on the Family tab first.</p>
 
   return (
     <>
-      <div style={{ display: 'flex', gap: 3, marginBottom: 16 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6, marginBottom: 16 }}>
         {tabBtn('today', '✅', 'Today')}
         {tabBtn('week', '📅', 'Week')}
         {tabBtn('approve', '👍', 'Approve')}
@@ -47,13 +48,18 @@ export default function AdultShell({ userId }: { userId: string }) {
         {tabBtn('family', '👨‍👩‍👧', 'Family')}
         {tabBtn('settings', '⚙️', 'Settings')}
       </div>
-      {tab === 'today' ? (me ? <TodayView householdId={me.household_id} memberId={me.id} /> : needHouse)
+      {tab === 'today' ? (me ? (
+          <>
+            <DraftPanel householdId={me.household_id} memberId={me.id} isAdult />
+            <TodayView householdId={me.household_id} memberId={me.id} />
+          </>
+        ) : needHouse)
         : tab === 'approve' ? (me ? <ApprovalsInbox householdId={me.household_id} /> : needHouse)
         : tab === 'scores' ? (me ? <ScoresView householdId={me.household_id} memberId={me.id} /> : needHouse)
         : tab === 'week' ? <WeekBoard meId={me?.id ?? null} />
         : tab === 'chores' ? <ChoreList />
-        : tab === 'settings' ? (me ? <SettingsView householdId={me.household_id} /> : needHouse)
-        : <AdultHome />}
+        : tab === 'settings' ? (me ? <SettingsView householdId={me.household_id} isHead={me.role === 'HEAD'} /> : needHouse)
+        : <AdultHome userId={userId} />}
     </>
   )
 }

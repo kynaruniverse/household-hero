@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { ASSIGN_COLS, dayParts, type Assignment } from '../lib/week'
 import {
-  cacheGet, cachePut, clearRejections, flushOutbox, getRejections, pendingIds, queueDone,
+  cacheGet, cachePut, clearRejections, flushOutbox, getRejections, isAuthError, pendingIds, queueDone,
 } from '../lib/offline'
 
 type Row = Assignment & { points_awarded: number }
@@ -72,9 +72,7 @@ export default function TodayView({ householdId, memberId }: { householdId: stri
     setMsg('')
     const at = new Date().toISOString()
     if (navigator.onLine) {
-      const { data, error } = await supabase.rpc('complete_assignment', {
-        p_assignment: a.id, p_client_completed_at: at,
-      })
+      const { data, error, status } = await supabase.rpc('complete_assignment', { p_assignment: a.id })
       if (!error) {
         navigator.vibrate?.(40)
         const r = data as { status: string; points: number }
@@ -83,7 +81,7 @@ export default function TodayView({ householdId, memberId }: { householdId: stri
         await load()
         return
       }
-      if (error.code) { // a real rejection from the server
+      if (error.code && !isAuthError(error.code, status)) { // a real rejection from the server
         setMsg(error.message)
         setBusy(null)
         return

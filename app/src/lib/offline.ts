@@ -45,6 +45,11 @@ export async function clearAll() {
   await d.clear('outbox')
 }
 
+// Expired or missing token (or any 401): not a verdict on the chore, so retry later
+export function isAuthError(code?: string, status?: number) {
+  return status === 401 || !!code?.startsWith('PGRST30')
+}
+
 let flushing = false
 
 // Replays queued "mark done" actions in order. Server wins: rejected actions
@@ -56,11 +61,11 @@ export async function flushOutbox() {
     const d = await dbPromise
     const items = (await d.getAll('outbox')) as OutboxItem[]
     for (const it of items) {
-      const { error } = await supabase.rpc('complete_assignment', {
+      const { error, status } = await supabase.rpc('complete_assignment', {
         p_assignment: it.assignment_id,
         p_client_completed_at: it.client_completed_at,
       })
-      if (error && (!error.code || error.code === 'PGRST301')) break // offline or token expired: retry later
+      if (error && (!error.code || isAuthError(error.code, status))) break // offline or token expired: retry later
       if (error) {
         const rej = await getRejections()
         rej.push(`${it.chore_name}: ${error.message}`)

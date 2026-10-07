@@ -19,16 +19,18 @@ export default function ScoresView({ householdId, memberId }: { householdId: str
   const [ach, setAch] = useState<Ach[]>([])
   const [earned, setEarned] = useState<Set<string>>(new Set())
   const [heroes, setHeroes] = useState<Hero[]>([])
+  const [reward, setReward] = useState('')
   const [msg, setMsg] = useState('')
 
   const load = useCallback(async () => {
-    const [lb, ac, ea, hr] = await Promise.all([
+    const [lb, ac, ea, hr, hh] = await Promise.all([
       supabase.rpc('get_leaderboard', { p_household: householdId }),
       supabase.from('achievements').select('key,name,description').order('name'),
       supabase.from('member_achievements').select('key').eq('member_id', memberId),
       supabase.from('week_results').select('member_id,points,week_start')
         .eq('household_id', householdId).eq('hero', true)
         .order('week_start', { ascending: false }).limit(4),
+      supabase.from('households').select('reward_note').eq('id', householdId).maybeSingle(),
     ])
     if (lb.error) return setMsg(lb.error.message)
     setRows((lb.data as Row[]) ?? [])
@@ -36,6 +38,7 @@ export default function ScoresView({ householdId, memberId }: { householdId: str
     setEarned(new Set(((ea.data as { key: string }[]) ?? []).map((e) => e.key)))
     const hs = (hr.data as Hero[]) ?? []
     setHeroes(hs.filter((h) => h.week_start === hs[0]?.week_start))
+    setReward((hh.data?.reward_note as string | null) ?? '')
   }, [householdId, memberId])
 
   useEffect(() => {
@@ -51,6 +54,7 @@ export default function ScoresView({ householdId, memberId }: { householdId: str
   return (
     <>
       <h2>🏆 This week</h2>
+      {reward && <p style={{ background: '#E6DFFA', padding: 10, borderRadius: 12 }}>🎁 {reward}</p>}
       {rows.map((r) => (
         <div key={r.r_member}
           style={{

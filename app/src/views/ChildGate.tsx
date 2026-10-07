@@ -24,31 +24,6 @@ export default function ChildGate({ userId }: { userId: string }) {
     else if (!data) setMsg("That code didn't work. Check it and try again.")
     else load()
   }
-  
-    const cheatTest = async () => {
-    if (!member) return
-    const bump = await supabase.from('members')
-      .update({ total_points: 99999 }).eq('id', member.id).select('id')
-    const edit = await supabase.from('assignments')
-      .update({ status: 'APPROVED', points_awarded: 999 })
-      .eq('member_id', member.id).select('id')
-    const wk = await supabase.from('weeks').select('id').limit(1)
-    const wid = wk.data?.[0]?.id
-    const sg = await supabase.rpc('start_game', { p_week: wid, p_players: [member.id, member.id] })
-    const sb = await supabase.rpc('submit_board', { p_week: wid, p_picks: [] })      
-    const mine = await supabase.from('assignments').select('id').eq('member_id', member.id).limit(1)
-    const appr = await supabase.rpc('approve_assignment', { p_assignment: mine.data?.[0]?.id })
-    const trophy = await supabase.from('member_achievements').insert({ member_id: member.id, key: 'century' })
-    const roll = await supabase.rpc('run_weekly_rollover')    
-    setMsg(
-      `Points edit: ${bump.error || !bump.data?.length ? 'blocked ✅' : 'ALLOWED ❌'}. ` +
-      `Status edit: ${edit.error || !edit.data?.length ? 'blocked ✅' : 'ALLOWED ❌'}. ` +
-      `Self-approve: ${appr.error ? 'blocked ✅' : 'ALLOWED ❌'}. ` +
-      `Start game: ${sg.error ? 'blocked ✅' : 'ALLOWED ❌'}. ` +
-      `Submit board: ${sb.error ? 'blocked ✅' : 'ALLOWED ❌'}. ` +
-      ` Fake trophy: ${trophy.error ? 'blocked ✅' : 'ALLOWED ❌'}. Rollover: ${roll.error ? 'blocked ✅' : 'ALLOWED ❌'}`      
-    )
-  }
 
   if (member === undefined) return <p>Loading…</p>
   
@@ -72,14 +47,13 @@ export default function ChildGate({ userId }: { userId: string }) {
       ) : (
         <ScoresView householdId={member.household_id} memberId={member.id} />
       )}
-      <button onClick={cheatTest} style={{ minHeight: 48, marginTop: 24 }}>Test: cheating</button>
       <p>{msg}</p>
     </>
   ) : (
     <>
       <h2>Enter your join code</h2>
       <input
-        value={code} onChange={(e) => setCode(e.target.value)} maxLength={6}
+        value={code} onChange={(e) => setCode(e.target.value)} maxLength={8}
         autoCapitalize="characters"
         style={{ padding: 12, fontSize: 24, letterSpacing: 4, width: '100%', boxSizing: 'border-box' }}
       />

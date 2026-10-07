@@ -22,7 +22,7 @@ export default function App() {
         : !session ? <SignIn />
         : session.user.is_anonymous ? <ChildGate userId={session.user.id} />
         : <AdultShell userId={session.user.id} />}
-      {session && (
+      {session && !session.user.is_anonymous && (
         <p><button onClick={async () => { await clearAll(); await supabase.auth.signOut() }} style={{ padding: 8 }}>Sign out</button></p>
       )}
     </main>

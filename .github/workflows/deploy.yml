@@ -21,13 +21,18 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: npm install
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      # npm ci needs app/package-lock.json. Run the "Create lockfile" workflow once to add it.
+      - run: npm ci
         working-directory: app
       - run: npm test
         working-directory: app
       - run: npm run build
         working-directory: app
         env:
+          # The site lives at /<repo-name>/ on GitHub Pages. Set a VITE_BASE variable to override (custom domain: "/").
+          VITE_BASE: ${{ vars.VITE_BASE || format('/{0}/', github.event.repository.name) }}
           VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
       - uses: actions/upload-pages-artifact@v3

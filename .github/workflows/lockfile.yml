@@ -1,0 +1,36 @@
+name: Create lockfile
+# One-off helper. Run it once from the Actions tab (Run workflow), then delete this file if you like.
+# It adds app/package-lock.json to the branch you run it on and starts a deploy.
+# Deploys use "npm ci", which fails until that file exists.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  lockfile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --package-lock-only --ignore-scripts
+        working-directory: app
+      - name: Commit the lockfile
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/package-lock.json
+          if git diff --cached --quiet; then
+            echo "Lockfile is already up to date"
+          else
+            git commit -m "Add package-lock.json"
+            git push
+          fi
+      - name: Start a deploy
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run deploy.yml --ref "$GITHUB_REF_NAME"

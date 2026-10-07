@@ -30,7 +30,7 @@ export default function ChoreList() {
   const closeForm = () => { setEditing(null); load() }
 
   if (houseId === undefined) return <p>Loading…</p>
-  if (houseId === null) return <p>Create your household on the Family tab first.</p>
+  if (houseId === null) return <p>Create or join a household on the Family tab first.</p>
 
   if (editing) {
     return (

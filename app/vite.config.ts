@@ -3,7 +3,9 @@ import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
 export default defineConfig({
-  base: '/household-hero/',
+  // CI sets VITE_BASE from the repository name, so renaming the repo can't leave a blank page.
+  // Locally it defaults to '/'.
+  base: process.env.VITE_BASE ?? '/',
   plugins: [
     react(),
     VitePWA({

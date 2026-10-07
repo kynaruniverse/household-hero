@@ -84,7 +84,7 @@ export default function WeekBoard({ meId }: { meId: string | null }) {
   }, [cells, icons])
 
   if (houseId === undefined) return <p>Loading…</p>
-  if (houseId === null) return <p>Create your household on the Family tab first.</p>
+  if (houseId === null) return <p>Create or join a household on the Family tab first.</p>
   
   if (week && week.status === 'DRAFTING' && week.draft_order) {
     return meId ? (
@@ -141,6 +141,17 @@ export default function WeekBoard({ meId }: { meId: string | null }) {
               : open > 0 ? `${open} cell${open === 1 ? '' : 's'} still need an owner`
               : '✅ Every cell has an owner. Ready to lock.'}
           </p>
+
+          {week.status === 'LOCKED' && !cells.some((c) => ['DONE', 'APPROVED', 'MISSED'].includes(c.status)) && (
+            <button disabled={busy} style={btn}
+              onClick={() => {
+                if (confirm('Unlock this week so you can change who does what?')) {
+                  act(supabase.rpc('reopen_week', { p_week: week.id }))
+                }
+              }}>
+              🔓 Unlock week
+            </button>
+          )}
 
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, margin: '8px 0' }}>
             {loads.map(({ m, v }) => (
