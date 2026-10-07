@@ -29,12 +29,18 @@ export default function ChildGate({ userId }: { userId: string }) {
     const edit = await supabase.from('assignments')
       .update({ status: 'APPROVED', points_awarded: 999 })
       .eq('member_id', member.id).select('id')
+    const wk = await supabase.from('weeks').select('id').limit(1)
+    const wid = wk.data?.[0]?.id
+    const sg = await supabase.rpc('start_game', { p_week: wid, p_players: [member.id, member.id] })
+    const sb = await supabase.rpc('submit_board', { p_week: wid, p_picks: [] })      
     const mine = await supabase.from('assignments').select('id').eq('member_id', member.id).limit(1)
     const appr = await supabase.rpc('approve_assignment', { p_assignment: mine.data?.[0]?.id })
     setMsg(
       `Points edit: ${bump.error || !bump.data?.length ? 'blocked ✅' : 'ALLOWED ❌'}. ` +
       `Status edit: ${edit.error || !edit.data?.length ? 'blocked ✅' : 'ALLOWED ❌'}. ` +
-      `Self-approve: ${appr.error ? 'blocked ✅' : 'ALLOWED ❌'}`
+      `Self-approve: ${appr.error ? 'blocked ✅' : 'ALLOWED ❌'}. ` +
+      `Start game: ${sg.error ? 'blocked ✅' : 'ALLOWED ❌'}. ` +
+      `Submit board: ${sb.error ? 'blocked ✅' : 'ALLOWED ❌'}`
     )
   }
 

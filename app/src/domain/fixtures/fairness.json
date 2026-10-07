@@ -1,0 +1,30 @@
+[
+  {
+    "name": "two adults split everything",
+    "roles": ["ADULT", "ADULT"],
+    "cells": [[3, "FAMILY"], [3, "FAMILY"], [4, "ADULT_ONLY"]],
+    "adult": 5,
+    "child": null
+  },
+  {
+    "name": "one adult, two kids: loads even out",
+    "roles": ["ADULT", "CHILD", "CHILD"],
+    "cells": [[4, "ADULT_ONLY"], [5, "FAMILY"], [5, "FAMILY"], [4, "FAMILY"]],
+    "adult": 6,
+    "child": 6
+  },
+  {
+    "name": "heavy adult-only work: the child gets only the family chores",
+    "roles": ["ADULT", "CHILD"],
+    "cells": [[5, "ADULT_ONLY"], [5, "ADULT_ONLY"], [2, "FAMILY"]],
+    "adult": 10,
+    "child": 2
+  },
+  {
+    "name": "kids only: adult-only chores are ignored",
+    "roles": ["CHILD", "CHILD"],
+    "cells": [[3, "FAMILY"], [3, "FAMILY"], [4, "ADULT_ONLY"]],
+    "adult": null,
+    "child": 3
+  }
+]

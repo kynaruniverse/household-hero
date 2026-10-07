@@ -6,6 +6,7 @@ import {
   ASSIGN_COLS, WEEK_COLS, dayParts, token, weekDates,
   type Assignment, type Week,
 } from '../lib/week'
+import GameScreen from './GameScreen'
 
 const btn = {
   minHeight: 48, padding: '0 14px', fontSize: 16, borderRadius: 12, border: 'none', background: '#fff',
@@ -23,6 +24,7 @@ export default function WeekBoard() {
   const [picked, setPicked] = useState<Assignment | null>(null)
   const [msg, setMsg] = useState('')
   const [busy, setBusy] = useState(false)
+  const [gameOpen, setGameOpen] = useState(false)
 
   const loadWeek = useCallback(async (hid: string, off: number) => {
     const { data: start, error } = await supabase.rpc('get_week_start', { p_household: hid, p_offset: off })
@@ -82,6 +84,15 @@ export default function WeekBoard() {
 
   if (houseId === undefined) return <p>Loading…</p>
   if (houseId === null) return <p>Create your household on the Family tab first.</p>
+  
+  if (week && (week.status === 'DRAFTING' || (gameOpen && week.status === 'SETUP'))) {
+    return (
+      <GameScreen
+        week={week} members={members} cells={cells}
+        onExit={() => { setGameOpen(false); if (houseId) loadWeek(houseId, offset) }}
+      />
+    )
+  }  
 
   const dates = week ? weekDates(week.week_start) : []
   const total = cells.reduce((s, c) => s + c.chore_effort, 0)
@@ -91,7 +102,8 @@ export default function WeekBoard() {
     v: cells.filter((c) => c.member_id === m.id).reduce((s, c) => s + c.chore_effort, 0),
   }))
   const open = cells.filter((c) => !c.member_id).length
-  const editable = week?.status === 'SETUP'
+  const editable = week?.status === 'SETUP' || week?.status === 'REVIEW'
+  const setup = week?.status === 'SETUP'
 
   return (
     <div style={{ paddingBottom: picked ? 240 : 0 }}>
@@ -128,16 +140,41 @@ export default function WeekBoard() {
             ))}
           </div>
 
+          {week.status === 'REVIEW' && (
+            <p style={{ background: '#E6DFFA', padding: 8, borderRadius: 10 }}>
+              🎲 Draft finished. Swap any cells, then lock the week.{' '}
+              <button disabled={busy} onClick={() => {
+                if (confirm('Throw away this draft and start again?')) {
+                  act(supabase.rpc('cancel_game', { p_week: week.id }))
+                }
+              }}>Redo draft</button>
+            </p>
+          )}
           {editable && (
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, margin: '8px 0' }}>
-              <button disabled={busy} style={btn}
-                onClick={() => act(supabase.rpc('copy_last_week', { p_week: week.id }), (d) => `Copied ${d} cells`)}>
-                📋 Copy last week
-              </button>
-              <button disabled={busy} style={btn}
-                onClick={() => act(supabase.rpc('suggest_assignments', { p_week: week.id }), (d) => `Filled ${d} cells`)}>
-                ✨ Auto-suggest
-              </button>
+              {setup && (
+                <>
+                  <button disabled={busy} style={btn}
+                    onClick={() => act(supabase.rpc('copy_last_week', { p_week: week.id }), (d) => `Copied ${d} cells`)}>
+                    📋 Copy last week
+                  </button>
+                  <button disabled={busy} style={btn}
+                    onClick={() => act(supabase.rpc('suggest_assignments', { p_week: week.id }), (d) => `Filled ${d} cells`)}>
+                    ✨ Auto-suggest
+                  </button>
+                  <button disabled={busy} style={btn}
+                    onClick={() => {
+                      if (cells.some((c) => c.member_id)) setMsg('Clear the board first (🧹), then start the game.')
+                      else setGameOpen(true)
+                    }}>
+                    🎲 Start Game Week
+                  </button>
+                  <button disabled={busy} style={btn}
+                    onClick={() => act(supabase.rpc('clear_board', { p_week: week.id }), 'Board cleared')}>
+                    🧹 Clear board
+                  </button>
+                </>
+              )}
               <button disabled={busy || open > 0} style={{ ...btn, background: '#CDEFE0', fontWeight: 700 }}
                 onClick={() => {
                   if (confirm('Lock this week? Everyone will see their chores and cells can’t be edited.')) {
@@ -147,11 +184,6 @@ export default function WeekBoard() {
                 🔒 Lock week
               </button>
             </div>
-          )}
-          {week.status === 'LOCKED' && (
-            <button disabled={busy} style={btn} onClick={() => act(supabase.rpc('reopen_week', { p_week: week.id }))}>
-              🔓 Reopen
-            </button>
           )}
 
           <div style={{ overflowX: 'auto', margin: '12px -24px', padding: '0 24px' }}>
